@@ -34,7 +34,7 @@ function isCorrectAnswer(p,input){
  return normalized.length>0 && acceptedNames(p).includes(normalized);
 }
 let quiz=[],index=0,answers=[],hits=0,locked=false,runId=0;
-function screen(id){['setup','game','finish'].forEach(x=>document.getElementById(x).classList.toggle('hide',x!==id));window.scrollTo({top:0,behavior:'instant'})}
+function screen(id){['setup','game','finish'].forEach(x=>document.getElementById(x).classList.toggle('hide',x!==id));document.getElementById('photoEditor').classList.toggle('hide',id!=='setup');window.scrollTo(0,0)}
 const photoOverridesKey='football_quiz_photo_overrides_v1';
 let photoOverrides={};try{photoOverrides=JSON.parse(localStorage.getItem(photoOverridesKey)||'{}')||{}}catch(e){photoOverrides={}}
 function persistOverrides(){try{localStorage.setItem(photoOverridesKey,JSON.stringify(photoOverrides))}catch(e){document.getElementById('editStatus').textContent='ブラウザに保存できませんでした。保存設定をご確認ください。'}}
@@ -147,5 +147,13 @@ function missing(node,reason){
 function submit(){if(locked)return;let v=norm(document.getElementById('answer').value);if(!v){document.getElementById('feedback').textContent='名前を入力してください';return}let p=quiz[index],ok=isCorrectAnswer(p,v);if(!ok){document.getElementById('feedback').textContent='違います。別の表記や名前でもう一度どうぞ。';return}locked=true;hits++;answers.push({p,correct:true,input:v});document.getElementById('feedback').textContent='正解！ '+p.name;setTimeout(()=>{index++;draw()},650)}
 function skip(){if(locked)return;locked=true;answers.push({p:quiz[index],correct:false});index++;draw()}
 function finish(){runId++;screen('finish');document.getElementById('finalscore').textContent=hits+' / '+quiz.length;document.getElementById('finaldesc').textContent=`正答率 ${Math.round(100*hits/quiz.length)}%　｜　スキップ ${answers.filter(a=>!a.correct).length}問`;document.getElementById('results').innerHTML=answers.map((a,i)=>`<div class="res"><small>${i+1}　${a.correct?'✓ 正解':'— スキップ'}</small><div style="font-weight:800">${a.p.name}</div><small>${a.p.aliases[0]}</small></div>`).join('')}
+function start(){
+  const pool=candidates();
+  if(!pool.length){document.getElementById('available').textContent='条件に合う選手がいません。設定を変更してください。';return;}
+  quiz=shuffle(pool).slice(0,Math.min(opts.count,pool.length));
+  index=0;answers=[];hits=0;locked=false;runId++;
+  screen('game');
+  draw().catch(err=>{console.error('写真表示エラー',err);const el=document.getElementById('photo');if(el)missing(el,'写真取得中にエラーが発生しました。');});
+}
 document.getElementById('form').onsubmit=e=>{e.preventDefault();submit()};document.getElementById('start').onclick=start;document.getElementById('skip').onclick=skip;document.getElementById('quit').onclick=finish;document.getElementById('back').onclick=()=>{runId++;screen('setup')};document.getElementById('settings').onclick=()=>screen('setup');document.getElementById('again').onclick=start;refresh();setupEditor();
 </script></body></html>
